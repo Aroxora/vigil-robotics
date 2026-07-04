@@ -1,12 +1,21 @@
 {
   "name": "@anvilwing/vigil-robotics",
   "version": "0.1.0",
-  "description": "Vigil Robotics — LLM-based autonomous robotics control framework with sensor-to-text pipeline for Boston Dynamics and ROS-compatible platforms.",
+  "description": "Vigil Robotics — LLM-based autonomous robotics control framework with sensor-to-text pipeline and ROS integration for multi-platform robot control (Boston Dynamics, Universal Robots, KUKA, ABB, Franka, and ROS-compatible platforms).",
   "main": "dist/bin/vigil.js",
   "exports": {
     ".": "./dist/bin/vigil.js",
     "./lean": "./dist/leanAgent.js",
     "./robotics": "./dist/robotics/index.js",
+    "./robotics/sensor": "./dist/robotics/sensor.js",
+    "./robotics/actuator": "./dist/robotics/actuator.js",
+    "./robotics/navigation": "./dist/robotics/navigation.js",
+    "./robotics/safety": "./dist/robotics/safety.js",
+    "./robotics/ros": "./dist/robotics/ros.js",
+    "./robotics/hardware": "./dist/robotics/hardware.js",
+    "./robotics/perception": "./dist/robotics/perception.js",
+    "./robotics/simulation": "./dist/robotics/simulation.js",
+    "./robotics/control": "./dist/robotics/control.js",
     "./tools": "./dist/tools/public/index.js"
   },
   "type": "module",
@@ -14,7 +23,10 @@
     "dist",
     "README.md",
     "agents",
-    "LICENSE"
+    "LICENSE",
+    "scripts/ros-mcp.mjs",
+    "scripts/gazebo-mcp.mjs",
+    "scripts/robot-safety-mcp.mjs"
   ],
   "bin": {
     "vigil": "dist/bin/vigil.js"
@@ -36,7 +48,10 @@
     "test:coverage": "jest --config jest.config.cjs --coverage",
     "lint": "eslint src/**/*.ts --max-warnings 200",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "ros:mcp": "node scripts/vigil-run.mjs scripts/ros-mcp.mjs",
+    "gazebo:mcp": "node scripts/vigil-run.mjs scripts/gazebo-mcp.mjs",
+    "safety:mcp": "node scripts/vigil-run.mjs scripts/robot-safety-mcp.mjs"
   },
   "keywords": [
     "robotics",
@@ -47,6 +62,12 @@
     "boston-dynamics",
     "spot",
     "atlas",
+    "universal-robots",
+    "kuka",
+    "abb",
+    "franka",
+    "kinova",
+    "mcp",
     "cli",
     "agent",
     "ai",

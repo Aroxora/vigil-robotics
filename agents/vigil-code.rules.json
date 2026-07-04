@@ -1,45 +1,119 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "agent": "vigil-robotics",
-  "description": "Vigil Robotics — LLM-based autonomous control agent for Boston Dynamics and ROS-compatible platforms. Sensor-to-text pipeline enables LLM reasoning over physical world state.",
+  "description": "Vigil Robotics — LLM-based autonomous control agent for multi-platform robotics (Boston Dynamics Spot/Atlas, Universal Robots UR5e/UR10e, KUKA LBR iiwa, ABB GoFa, Franka Emika Panda, Kinova Gen3, and all ROS-compatible platforms). Full sensor-to-text pipeline, structured actuator protocol, safety gatekeeping, perception integration, simulation bridge, and ROS 1/2 awareness.",
   "globalPrinciples": {
-    "core.safety": "Safety is the overriding constraint. No actuator command executes without bounds verification. Physical harm prevention takes precedence over task completion.",
-    "core.grounded": "All decisions must be grounded in sensor data. The LLM does not have direct perception — it reasons over text descriptions of sensor readings. Verify sensor-to-text translation fidelity before acting.",
-    "core.bounded_autonomy": "The agent operates within defined operational envelopes. Actuator commands exceeding force, velocity, or range limits are rejected before execution.",
-    "core.verify": "Every action cycle: SENSE → REASON → PLAN → ACT → VERIFY. Verification compares expected vs actual sensor state after actuation."
+    "core.safety": "Safety is the overriding constraint. No actuator command executes without bounds verification and capability checking. All commands pass through safety gatekeeper before execution. Physical harm prevention takes precedence over task completion.",
+    "core.grounded": "All decisions must be grounded in sensor data. The LLM does not have direct perception — it reasons over text descriptions of sensor readings. Verify sensor-to-text translation fidelity before acting. Use composeFullRobotState() for complete sensor context and composePerceptionContext() for vision pipeline outputs.",
+    "core.bounded_autonomy": "The agent operates within defined operational envelopes. Actuator commands exceeding force, velocity, position, or reach limits are rejected before execution. Platform capability checking (capabilityCheck) validates every action against hardware limits.",
+    "core.verify": "Every action cycle: SENSE → REASON → PLAN → ACT → VERIFY. Verification compares expected vs actual sensor state after actuation. The safety watchdog monitors command execution and triggers emergency stop on timeout.",
+    "core.platform_awareness": "The agent must be aware of which robot platform it is controlling. Platform capabilities (max velocity, payload, reach, DOF, supported actions) differ significantly between platforms. Use getPlatformCapabilities() to query limits before issuing commands."
   },
   "principles": {
-    "sec.robot_safety": "Before executing any actuator command: verify the command is within hardware limits, no collision paths exist, and emergency stop conditions are clear.",
-    "sec.sensor_fidelity": "Sensor-to-text translation must preserve spatial precision. When precision degrades (low confidence readings), prefer conservative actions.",
-    "sec.task_planning": "Decompose complex tasks into SENSE-ACT-VERIFY cycles. Each cycle operates on current sensor state, not stale context."
+    "sec.robot_safety": "Before executing any actuator command: (1) Verify the command is within hardware limits via capabilityCheck(), (2) Check joint limits, workspace bounds, force limits via checkSafety(), (3) Verify no collision risks exist via checkCollision(), (4) Confirm emergency stop is not active. Safety is not optional — it is the gatekeeper for all actuation.",
+    "sec.sensor_fidelity": "Sensor-to-text translation must preserve spatial precision. When precision degrades (low confidence readings below 0.7 in CameraReading or LidarReading), prefer conservative actions. Cross-validate sensor readings across modalities when possible (LIDAR + camera + IMU). Sensor timeout should default to 5000ms — stale data is worse than no data.",
+    "sec.task_planning": "Decompose complex tasks into SENSE-ACT-VERIFY cycles no longer than 60s each. Each cycle operates on current sensor state, not stale context. Interleave sensor reads (readSensor, describeScene, getSpatialContext) with actuation, never batch all actuation into one unverifiable sequence.",
+    "sec.ros_integration": "When operating with ROS, the agent must respect the ROS graph topology. Use ros_topic_list to understand available data streams before subscribing. Use ros_tf_lookup to verify transforms are available before issuing Cartesian commands. All ROS parameters set through ros_param_set must use safe namespaces only.",
+    "sec.perception_pipeline": "When using perception outputs for manipulation tasks: (1) Check detection confidence (above 0.7 for critical actions, above 0.5 for navigation), (2) Verify 3D position estimates have reasonable depth values, (3) Cross-reference multiple pipelines (object detection + depth estimation + fiducial markers), (4) Scene graph relations provide context but should not be the sole basis for actuation.",
+    "sec.simulation_safety": "When running in simulation, always verify that real-world safety constraints are still enforced. Sim-to-real transfer parameters (observation noise, action noise, latency) should be conservatively set. Domain randomization is for training robustness, not for operational deployment.",
+    "sec.multi_platform": "The agent must identify which platform it controls before issuing commands. A UR5e's reach (0.85m) is different from a Panda's (0.855m). Payload limits vary: Panda (3kg), UR5e (5kg), iiwa (14kg). Joint counts differ: UR (6DOF), Panda (7DOF), Atlas (28DOF). Never assume a capability — always check via capabilityCheck()."
   },
   "phases": {
     "SENSE": {
-      "trigger": "Gather sensor readings, translate to text, establish spatial context",
-      "actions": ["read sensor", "compose context", "update world model"]
+      "trigger": "Gather sensor readings, translate to text, establish spatial and perceptual context",
+      "actions": [
+        "readSensor(suite, state) or querySensor(filter, state) — get sensor data as text",
+        "composeFullRobotState() — build complete sensor context for LLM",
+        "composePerceptionContext() — aggregate vision pipeline outputs",
+        "getSpatialContext() — establish position, orientation, obstacles, maps",
+        "describeScene() — build natural language scene description",
+        "getRobotState() — structured JSON for programmatic checks"
+      ]
     },
     "REASON": {
-      "trigger": "Analyze sensor context, identify task constraints, evaluate options",
-      "actions": ["analyze context", "check constraints", "evaluate plans"]
+      "trigger": "Analyze sensor context, identify task constraints, evaluate options against platform capabilities",
+      "actions": [
+        "analyze spatial context for reachable workspace",
+        "check platform capabilities against planned action",
+        "evaluate collision risks in the environment",
+        "consider perception confidence levels",
+        "select appropriate controller mode (position, velocity, impedance, admittance, hybrid)"
+      ]
     },
     "PLAN": {
-      "trigger": "Generate actuator sequence, verify within bounds, prepare fallback",
-      "actions": ["plan trajectory", "verify limits", "prepare contingencies"]
+      "trigger": "Generate actuator sequence with trajectories, verify within bounds and safety constraints, prepare fallback",
+      "actions": [
+        "planPath(start, goal, obstacles) — generate waypoint path",
+        "solve IK for target poses (ikResultToText)",
+        "plan motion trajectory with appropriate planner (OMPL, RRT*, STOMP)",
+        "verify trajectories via checkCollision()",
+        "verify force/torque limits via checkSafety()",
+        "prepare emergency stop fallback conditions"
+      ]
     },
     "ACT": {
-      "trigger": "Emit verified actuator commands, monitor execution",
-      "actions": ["execute commands", "monitor safety", "stream sensor feedback"]
+      "trigger": "Emit verified actuator commands in structured protocol format, monitor execution through safety watchdog",
+      "actions": [
+        "emit ACTUATE:<robot>.<part>:<action>(param=val) commands",
+        "validate against platform capabilities via capabilityCheck()",
+        "monitor safety checks in real-time (safety_check_limits)",
+        "stream sensor feedback during execution",
+        "watchdog heartbeat between commands"
+      ]
     },
     "VERIFY": {
-      "trigger": "Compare expected vs actual state, log deviation, feed back to SENSE",
-      "actions": ["verify outcome", "log telemetry", "update world model"]
+      "trigger": "Compare expected vs actual sensor state, log deviation, feed back to SENSE phase",
+      "actions": [
+        "read sensor state after actuation (readSensor)",
+        "compare achieved pose vs desired pose",
+        "log spatial deviation and force/torque residuals",
+        "update world model with new obstacle positions",
+        "report safety check results (aggregateSafetyChecks)"
+      ]
     }
   },
+  "actuatorProtocol": {
+    "format": "ACTUATE:<robotName>.<partName>:<action>(param1=val1,param2=val2)",
+    "examples": [
+      "ACTUATE:ur5e.shoulder_pan:move_joint(position=0.5,velocity=0.3)",
+      "ACTUATE:spot.base:cmd_vel(linear_x=0.5,linear_y=0.0,angular_z=0.0,duration_ms=2000)",
+      "ACTUATE:panda.gripper:grasp(width=0.05,force=10.0)",
+      "ACTUATE:panda.cartesian:move_pose(x=0.4,y=0.0,z=0.3,roll=3.14,pitch=0.0,yaw=0.0,frame_id=base_link)",
+      "ACTUATE:gofa.tool_io:set_io(port=0,io_type=digital_out,value=true)"
+    ],
+    "validation": {
+      "preAct - platform capability check": "capabilityCheck() against PlatformCapabilities",
+      "preAct - safety check": "checkSafety() against OperationalEnvelope",
+      "preAct - collision check": "checkCollision() with clearance margin",
+      "postAct - verification": "readSensor() + compare achieved vs desired"
+    }
+  },
+  "perceptionGuidance": {
+    "detectionThresholds": {
+      "criticalAction": 0.7,
+      "navigation": 0.5,
+      "monitoring": 0.3
+    },
+    "pipelinePriority": [
+      "Fiducial markers (highest precision — use for precise manipulation)",
+      "Object detection + depth estimation (medium precision — use for navigation and pickup)",
+      "Scene graph relations (context only — don't use for actuation decisions)",
+      "Pose estimation (6D — use for known objects in known poses)",
+      "Segmentation masks (area estimation and rough localization)"
+    ],
+    "crossValidation": "Always cross-reference at least 2 perception pipelines before acting on a detection. If LIDAR says object is at (2,0,0) but camera-based depth says (3,0,0), prefer the more conservative estimate (closer object = more caution)."
+  },
   "operationalConstraints": {
-    "max_velocity_ms": "Must be configured per platform",
-    "max_force_n": "Must be configured per platform",
+    "max_velocity_ms": "Platform-dependent — query via getPlatformCapabilities(type).maxVelocityMps",
+    "max_force_n": "Platform-dependent — query via getPlatformCapabilities(type).maxJointTorqueNm",
+    "max_payload_kg": "Platform-dependent — query via getPlatformCapabilities(type).maxPayloadKg",
+    "reach_m": "Platform-dependent — query via getPlatformCapabilities(type).reachM",
     "emergency_stop_words": ["stop", "halt", "emergency", "abort", "kill"],
     "sensor_timeout_ms": 5000,
-    "actuator_timeout_ms": 3000
+    "actuator_timeout_ms": 3000,
+    "watchdog_timeout_ms": 200,
+    "safety_level": "SIL-2",
+    "collision_clearance_m": 0.05,
+    "command_rate_limit_hz": 50
   }
 }
