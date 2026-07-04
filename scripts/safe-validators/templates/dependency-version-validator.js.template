@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+/**
+ * SAFE DEFENSIVE VALIDATOR — DEPENDENCY VERSION PRESENCE PROOF
+ *
+ * Purpose: Confirms a vulnerable package version is present in the local dependency tree
+ *          or lockfile without ever invoking the vulnerable code path or performing network
+ *          operations against untrusted hosts.
+ *
+ * Safety guarantees (non-negotiable):
+ * - Read-only (npm ls / package.json / package-lock.json inspection only)
+ * - No execution of the vulnerable package
+ * - No outbound network (except optional local npm ls which is offline)
+ * - Requires explicit operator authorization before running
+ * - Produces machine-readable evidence JSON for audit / chain-of-custody
+ *
+ * Usage (after review):
+ *   node dependency-version-validator.js --package <name> --version <semver> [--root /path]
+ *
+ * This is a generated safe validator for Vigil vulnerability discovery.
+ * It is NOT an exploit. It is a read-only evidence collector.
+ *
+ * © Trenchwork / Vigil — Defensive CND tooling only. Not for offensive use.
+ */
+
+import { readFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = resolve(fileURLToPath(import.meta.url), '..');
+
+function parseArgs() {
+  const args = {};
+  for (let i = 2; i < process.argv.length; i++) {
+    const a = process.argv[i];
+    if (a === '--package') args.package = process.argv[++i];
+    else if (a === '--version') args.version = process.argv[++i];
+    else if (a === '--root') args.root = process.argv[++i];
+  }
+  if (!args.package) {
+    console.error('Usage: node dependency-version-validator.js --package <name> --version <semver> [--root /path/to/repo]');
+    process.exit(2);
+  }
+  return args;
+}
+
+function main() {
+  const { package: pkg, version: ver, root = process.cwd() } = parseArgs();
+  const started = new Date().toISOString();
+  const evidence = {
+    validator: 'dependency-version-validator',
+    schemaVersion: '1.0.0',
+    generatedBy: 'Vigil safe-poc-generator (Phase 1, template A)',
+    startedAt: started,
+    package: pkg,
+    requestedVersion: ver,
+    root: resolve(root),
+    checks: [],
+    present: false,
+    evidenceFiles: [],
+    conclusion: '',
+  };
+
+  // Check 1: package.json (top-level or in node_modules for direct)
+  const pkgJsonPath = resolve(root, 'package.json');
+  if (existsSync(pkgJsonPath)) {
+    try {
+      const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+      const inDeps = (pkgJson.dependencies || {})[pkg] || (pkgJson.devDependencies || {})[pkg];
+      evidence.checks.push({ type: 'package.json', path: 'package.json', found: !!inDeps, value: inDeps });
+      if (inDeps) evidence.evidenceFiles.push('package.json');
+    } catch (e) { evidence.checks.push({ type: 'package.json', error: String(e).slice(0, 200) }); }
+  }
+
+  // Check 2: package-lock.json (authoritative for exact resolved versions)
+  const lockPath = resolve(root, 'package-lock.json');
+  if (existsSync(lockPath)) {
+    try {
+      const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+      const packages = lock.packages || {};
+      const nodeModulesEntry = packages[`node_modules/${pkg}`];
+      const rootEntry = packages[pkg]; // rare for root
+      const foundVersion = nodeModulesEntry?.version || rootEntry?.version;
+      const matches = foundVersion && (ver ? foundVersion.includes(ver) || foundVersion === ver : true);
+      evidence.checks.push({
+        type: 'package-lock.json',
+        path: 'package-lock.json',
+        found: !!foundVersion,
+        version: foundVersion,
+        matchesRequested: matches,
+      });
+      if (foundVersion) evidence.evidenceFiles.push('package-lock.json');
+      if (matches) evidence.present = true;
+    } catch (e) { evidence.checks.push({ type: 'package-lock.json', error: String(e).slice(0, 200) }); }
+  }
+
+  // Check 3: npm ls (best effort, offline)
+  const npmLs = spawnSync('npm', ['ls', pkg, '--all', '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 15000,
+    windowsHide: true,
+  });
+  if (npmLs.status === 0 && npmLs.stdout) {
+    try {
+      const ls = JSON.parse(npmLs.stdout);
+      const found = ls.dependencies && ls.dependencies[pkg];
+      evidence.checks.push({ type: 'npm-ls', found: !!found, version: found?.version, exitCode: npmLs.status });
+      if (found) {
+        evidence.present = true;
+        evidence.evidenceFiles.push('npm-ls-output');
+      }
+    } catch (e) { /* ignore parse */ }
+  }
+
+  evidence.completedAt = new Date().toISOString();
+  evidence.conclusion = evidence.present
+    ? `CONFIRMED: ${pkg}@${ver || 'any'} (or close match) is present in the dependency tree or lockfile.`
+    : `NOT PRESENT (or not at the vulnerable version) in scanned manifests for ${pkg}.`;
+
+  // Output evidence
+  console.log(JSON.stringify(evidence, null, 2));
+
+  // Exit code convention for automation: 0 = present (finding confirmed), 1 = not present, 2 = usage/error
+  process.exit(evidence.present ? 0 : 1);
+}
+
+main();

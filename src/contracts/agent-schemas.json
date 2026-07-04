@@ -1,0 +1,299 @@
+{
+  "$schema": "./schemas/agent-schemas.schema.json",
+  "contractVersion": "1.0.0",
+  "version": "2024-11-24",
+  "label": "Vigil Robotics Agent Configuration Schema",
+  "description": "Centralized configuration for all agents, models, providers, and capabilities",
+  "providers": [
+    {
+      "id": "deepseek",
+      "label": "DeepSeek",
+      "description": "DeepSeek reasoning and chat models",
+      "envVars": {
+        "apiKey": "DEEPSEEK_API_KEY"
+      },
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "tools",
+        "streaming"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "deepseek-v4-pro",
+      "label": "DeepSeek v4 Pro",
+      "provider": "deepseek",
+      "description": "Heavy: Deep reasoning with 1M context - rivals top models.",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "tools",
+        "streaming"
+      ]
+    },
+    {
+      "id": "deepseek-chat",
+      "label": "DeepSeek Chat",
+      "provider": "deepseek",
+      "description": "Small: Fast general assistant - excellent value.",
+      "capabilities": [
+        "chat",
+        "tools",
+        "streaming"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "name": "vigil-robotics",
+      "label": "Vigil Robotics",
+      "description": "Robotics control agent with sensor-to-text pipeline, spatial reasoning, and actuator command sequencing for Boston Dynamics and ROS platforms.",
+      "defaultProvider": "deepseek",
+      "defaultModel": "deepseek-v4-pro",
+      "systemPrompt": {
+        "type": "rulebook",
+        "template": "You are Vigil Robotics — a terminal agent for autonomous robot control with sensor-to-text pipelines. You handle software engineering, repository maintenance, cloud operations, and robotics control — sensor data interpretation, spatial reasoning, task planning, and actuator command sequencing on Boston Dynamics and ROS-compatible platforms.\n\n## Core Identity\n- You operate as a robotics control agent with sensor grounding, bounded autonomy, and safety-first actuation.\n- Every decision is grounded in sensor context: LIDAR point clouds, camera frames, joint encoder values, IMU data — all translated to text descriptions.\n- Actuator commands are parsed from text output using the ACTUATE: protocol and verified against hardware limits before execution.\n- You follow the SENSE → REASON → PLAN → ACT → VERIFY cycle for all physical operations."
+      },
+      "rulebook": {
+        "file": "agents/vigil-code.rules.json",
+        "version": "2026-06-15",
+        "contractVersion": "1.0.0",
+        "description": "Robotics control agent with SENSE→REASON→PLAN→ACT→VERIFY cycle and MCP tool integration."
+      },
+      "metadata": {
+        "primaryUseCase": "robotics-control",
+        "secondaryUseCase": "coding-and-automation",
+        "aliases": [
+          "vigil-robotics",
+          "robotics",
+          "default"
+        ],
+        "tags": [
+          "robotics",
+          "boston-dynamics",
+          "ros",
+          "sensor-fusion",
+          "autonomous-control",
+          "coding",
+          "mcp"
+        ]
+      }
+    }
+  ],
+  "slashCommands": [
+    {
+      "command": "/model",
+      "description": "Choose what model and reasoning effort to use",
+      "category": "configuration"
+    },
+    {
+      "command": "/approvals",
+      "description": "Choose what the agent can do without approval",
+      "category": "configuration"
+    },
+    {
+      "command": "/new",
+      "description": "Start a new chat without closing the session",
+      "category": "workspace"
+    },
+    {
+      "command": "/init",
+      "description": "Create AGENTS.md with instructions",
+      "category": "workspace"
+    },
+    {
+      "command": "/compact",
+      "description": "Summarize conversation to prevent hitting the context limit",
+      "category": "workspace"
+    },
+    {
+      "command": "/diff",
+      "description": "Show git diff (including untracked files)",
+      "category": "workspace"
+    },
+    {
+      "command": "/status",
+      "description": "Show current session configuration and token usage",
+      "category": "diagnostics"
+    },
+    {
+      "command": "/mcp",
+      "description": "List configured MCP tools",
+      "category": "configuration"
+    },
+    {
+      "command": "/logout",
+      "description": "Log out (clear stored credentials)",
+      "category": "configuration"
+    },
+    {
+      "command": "/quit",
+      "description": "Exit",
+      "category": "other"
+    },
+    {
+      "command": "/exit",
+      "description": "Exit",
+      "category": "other"
+    },
+    {
+      "command": "/help",
+      "description": "Show all available commands and keyboard shortcuts",
+      "category": "other"
+    },
+    {
+      "command": "/features",
+      "description": "Toggle optional features (metrics, MCP, etc.)",
+      "category": "configuration"
+    },
+    {
+      "command": "/test",
+      "description": "Intelligent test flows (generate, bugs, ui, edge)",
+      "category": "other"
+    },
+    {
+      "command": "/refresh-models",
+      "description": "Auto-discover new models from configured providers",
+      "category": "configuration"
+    },
+    {
+      "command": "/secrets",
+      "description": "Configure API keys",
+      "category": "configuration"
+    },
+    {
+      "command": "/tools",
+      "description": "Enable or disable CLI tools and MCP servers",
+      "category": "configuration"
+    },
+    {
+      "command": "/thinking",
+      "description": "Toggle thinking mode (balanced or extended)",
+      "category": "configuration"
+    },
+    {
+      "command": "/skills",
+      "description": "List available SKILL.md packages and refresh the cache",
+      "category": "workspace"
+    },
+    {
+      "command": "/doctor",
+      "description": "Check environment, secrets, and tool readiness",
+      "category": "diagnostics"
+    },
+    {
+      "command": "/checks",
+      "description": "Run repo checks (npm test / npm run build / npm run lint)",
+      "category": "diagnostics"
+    },
+    {
+      "command": "/context",
+      "description": "Refresh workspace snapshot (depth/excerpt overrides)",
+      "category": "workspace"
+    },
+    {
+      "command": "/sessions",
+      "description": "Manage saved conversations, autosave, and session history",
+      "category": "workspace"
+    },
+    {
+      "command": "/providers",
+      "description": "List all configured AI providers",
+      "category": "configuration"
+    },
+    {
+      "command": "/memory",
+      "description": "Edit VIGIL.md memory file (project context and preferences)",
+      "category": "configuration"
+    },
+    {
+      "command": "/vim",
+      "description": "Toggle vim-style editing mode in the input",
+      "category": "configuration"
+    },
+    {
+      "command": "/output-style",
+      "description": "Change response style (default, explanatory, learning, concise, custom)",
+      "category": "configuration"
+    },
+    {
+      "command": "/cost",
+      "description": "Show detailed token usage and API cost breakdown",
+      "category": "diagnostics"
+    },
+    {
+      "command": "/usage",
+      "description": "Show token and context usage statistics",
+      "category": "diagnostics"
+    },
+    {
+      "command": "/clear",
+      "description": "Clear conversation history and start fresh",
+      "category": "workspace"
+    },
+    {
+      "command": "/resume",
+      "description": "Resume a previous session by ID or pick from recent",
+      "category": "workspace"
+    },
+    {
+      "command": "/export",
+      "description": "Export conversation history to a file",
+      "category": "workspace"
+    },
+    {
+      "command": "/bug",
+      "description": "Report an issue or bug",
+      "category": "other"
+    },
+    {
+      "command": "/terminal-setup",
+      "description": "Configure terminal keybindings (Shift+Enter for multi-line)",
+      "category": "configuration"
+    },
+    {
+      "command": "/permissions",
+      "description": "Configure tool permissions (allow/deny rules)",
+      "category": "configuration"
+    },
+    {
+      "command": "/update",
+      "description": "Check for updates and configure auto-update preference",
+      "category": "configuration"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "chat",
+      "label": "Chat",
+      "description": "Basic conversational capabilities"
+    },
+    {
+      "id": "reasoning",
+      "label": "Reasoning",
+      "description": "Extended chain-of-thought reasoning capabilities"
+    },
+    {
+      "id": "tools",
+      "label": "Tool Use",
+      "description": "Ability to call external tools and functions"
+    },
+    {
+      "id": "streaming",
+      "label": "Streaming",
+      "description": "Support for streaming responses"
+    },
+    {
+      "id": "multimodal",
+      "label": "Multimodal",
+      "description": "Support for images and other non-text inputs"
+    }
+  ],
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2024-11-24",
+    "description": "Single source of truth for all agent configurations in Vigil Robotics"
+  }
+}

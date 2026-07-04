@@ -1,0 +1,25 @@
+{
+  "$schema": "./schemas/agent-profile.schema.json",
+  "contractVersion": "1.0.0",
+  "version": "2024-11-24",
+  "label": "AGI CLI profile manifest",
+  "description": "Default profile definition shipped with the CLI, including provider defaults and rulebook bindings.",
+  "profiles": [
+    {
+      "name": "vigil-code",
+      "label": "Vigil Default",
+      "description": "Single default profile for coding, regression analysis, variant analysis, 安全、MCP 工具, and OSINT workflows.",
+      "defaultProvider": "deepseek",
+      "defaultModel": "deepseek-v4-pro",
+      "systemPrompt": {
+        "type": "rulebook"
+      },
+      "rulebook": {
+        "file": "agents/vigil-code.rules.json",
+        "version": "2024-11-24",
+        "contractVersion": "1.0.0",
+        "description": "Deterministic coding workflow guardrails."
+      }
+    }
+  ]
+}

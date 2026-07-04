@@ -1,0 +1,500 @@
+{
+  "$schema": "./schemas/unified-schema.schema.json",
+  "contractVersion": "2.0.0",
+  "version": "2024-11-25",
+  "label": "AGI CLI Unified AI Task Schema",
+  "description": "Comprehensive schema for all AI tasks, providers, tools, and capabilities - single source of truth",
+
+  "providers": [
+    {
+      "id": "deepseek",
+      "label": "DeepSeek",
+      "description": "DeepSeek reasoning and coding models",
+      "baseUrl": "https://api.deepseek.com",
+      "envVars": {
+        "apiKey": "DEEPSEEK_API_KEY"
+      },
+      "capabilities": ["chat", "reasoning", "tools", "streaming"],
+      "openaiCompatible": true,
+      "models": ["deepseek-v4-pro", "deepseek-chat"],
+      "defaultModel": "deepseek-v4-pro",
+      "status": "production"
+    }
+  ],
+
+  "taskTypes": [
+    {
+      "id": "coding",
+      "label": "Code Generation & Editing",
+      "description": "Generate, edit, refactor, and analyze code",
+      "requiredCapabilities": ["chat", "tools"],
+      "preferredCapabilities": ["reasoning", "streaming"],
+      "defaultTemperature": 0.0,
+      "recommendedProviders": ["anthropic", "openai", "deepseek"],
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    {
+      "id": "reasoning",
+      "label": "Complex Reasoning",
+      "description": "Multi-step reasoning, planning, and analysis",
+      "requiredCapabilities": ["chat", "reasoning"],
+      "preferredCapabilities": ["tools", "streaming"],
+      "defaultTemperature": 0.3,
+      "recommendedProviders": ["anthropic", "openai", "deepseek"],
+      "tools": ["read", "glob", "grep", "web_search", "web_fetch"]
+    },
+    {
+      "id": "chat",
+      "label": "Conversational",
+      "description": "General conversation and Q&A",
+      "requiredCapabilities": ["chat"],
+      "preferredCapabilities": ["streaming"],
+      "defaultTemperature": 0.7,
+      "recommendedProviders": ["anthropic", "openai", "google"],
+      "tools": []
+    },
+    {
+      "id": "analysis",
+      "label": "Code Analysis",
+      "description": "Analyze code quality, security, dependencies",
+      "requiredCapabilities": ["chat", "tools"],
+      "preferredCapabilities": ["reasoning"],
+      "defaultTemperature": 0.0,
+      "recommendedProviders": ["anthropic", "openai"],
+      "tools": ["read", "glob", "grep", "analyze_complexity", "dependency_audit", "code_security_scan"]
+    },
+    {
+      "id": "research",
+      "label": "Research & Information",
+      "description": "Research topics, gather information",
+      "requiredCapabilities": ["chat"],
+      "preferredCapabilities": ["tools", "streaming"],
+      "defaultTemperature": 0.5,
+      "recommendedProviders": ["anthropic", "openai", "google"],
+      "tools": ["web_search", "web_fetch", "read"]
+    },
+    {
+      "id": "multimodal",
+      "label": "Vision & Multimodal",
+      "description": "Process images, documents, and mixed content",
+      "requiredCapabilities": ["chat", "multimodal"],
+      "preferredCapabilities": ["vision", "streaming"],
+      "defaultTemperature": 0.3,
+      "recommendedProviders": ["google", "anthropic", "openai"],
+      "tools": ["read", "write"]
+    },
+    {
+      "id": "testing",
+      "label": "Test Generation",
+      "description": "Generate and run tests",
+      "requiredCapabilities": ["chat", "tools"],
+      "preferredCapabilities": ["reasoning"],
+      "defaultTemperature": 0.0,
+      "recommendedProviders": ["anthropic", "openai"],
+      "tools": ["read", "write", "edit", "bash", "generate_test_stub"]
+    },
+    {
+      "id": "documentation",
+      "label": "Documentation",
+      "description": "Generate documentation and comments",
+      "requiredCapabilities": ["chat", "tools"],
+      "preferredCapabilities": ["streaming"],
+      "defaultTemperature": 0.3,
+      "recommendedProviders": ["anthropic", "openai"],
+      "tools": ["read", "write", "edit", "generate_docstring"]
+    },
+    {
+      "id": "security",
+      "label": "Security Analysis",
+      "description": "Security auditing and vulnerability analysis",
+      "requiredCapabilities": ["chat", "tools", "reasoning"],
+      "preferredCapabilities": ["streaming"],
+      "defaultTemperature": 0.0,
+      "recommendedProviders": ["anthropic", "openai"],
+      "tools": ["read", "glob", "grep", "dependency_audit", "code_security_scan"],
+      "requiresAuth": true
+    },
+  ],
+
+  "toolCategories": [
+    {
+      "id": "core",
+      "label": "Core Tools",
+      "description": "Essential tools always available",
+      "alwaysEnabled": true,
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    {
+      "id": "web",
+      "label": "Web Tools",
+      "description": "Web search and fetch capabilities",
+      "alwaysEnabled": false,
+      "tools": ["web_search", "web_fetch"]
+    },
+    {
+      "id": "coding",
+      "label": "Enhanced Coding",
+      "description": "Advanced code analysis and generation",
+      "alwaysEnabled": false,
+      "tools": ["analyze_complexity", "find_dependencies", "generate_docstring", "suggest_refactorings", "generate_test_stub"]
+    },
+    {
+      "id": "security",
+      "label": "Security Research",
+      "description": "Security analysis and auditing",
+      "alwaysEnabled": false,
+      "requiresAuth": true,
+      "tools": ["dependency_audit", "code_security_scan"]
+    },
+    {
+      "id": "mcp",
+      "label": "Model Context Protocol",
+      "description": "MCP server integration",
+      "alwaysEnabled": false,
+      "tools": []
+    },
+    {
+      "id": "intelligence",
+      "label": "Code Intelligence",
+      "description": "Automated code analysis, refactoring, documentation, and test generation",
+      "alwaysEnabled": false,
+      "tools": ["intelligence_analyze", "intelligence_refactor", "intelligence_document", "intelligence_test", "intelligence_full"]
+    }
+  ],
+
+  "tools": [
+    {
+      "id": "read",
+      "name": "Read",
+      "description": "Read file contents from the filesystem",
+      "category": "core",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {"type": "string", "description": "Absolute path to the file"},
+          "offset": {"type": "number", "description": "Line number to start from"},
+          "limit": {"type": "number", "description": "Number of lines to read"}
+        },
+        "required": ["file_path"]
+      }
+    },
+    {
+      "id": "write",
+      "name": "Write",
+      "description": "Write content to a file",
+      "category": "core",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {"type": "string", "description": "Absolute path to the file"},
+          "content": {"type": "string", "description": "Content to write"}
+        },
+        "required": ["file_path", "content"]
+      }
+    },
+    {
+      "id": "edit",
+      "name": "Edit",
+      "description": "Performs exact string replacements in files. Use empty old_string to create a file and empty new_string to delete matched text.",
+      "category": "core",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {"type": "string", "description": "Absolute path to the file to modify or create"},
+          "old_string": {"type": "string", "description": "Exact text to replace. Use empty string to create a new file."},
+          "new_string": {"type": "string", "description": "Replacement text. Use empty string to delete the match. Defaults to empty when omitted."},
+          "replace_all": {"type": "boolean", "description": "Replace all occurrences instead of enforcing uniqueness"}
+        },
+        "required": ["file_path", "old_string"]
+      }
+    },
+    {
+      "id": "bash",
+      "name": "Bash",
+      "description": "Execute shell commands",
+      "category": "core",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {"type": "string", "description": "Command to execute"},
+          "timeout": {"type": "number", "description": "Timeout in milliseconds"},
+          "description": {"type": "string", "description": "What this command does"}
+        },
+        "required": ["command"]
+      }
+    },
+    {
+      "id": "glob",
+      "name": "Glob",
+      "description": "Find files matching a pattern",
+      "category": "core",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {"type": "string", "description": "Glob pattern to match"},
+          "path": {"type": "string", "description": "Directory to search in"}
+        },
+        "required": ["pattern"]
+      }
+    },
+    {
+      "id": "grep",
+      "name": "Grep",
+      "description": "Search file contents with regex",
+      "category": "core",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {"type": "string", "description": "Regex pattern to search for"},
+          "path": {"type": "string", "description": "File or directory to search"},
+          "output_mode": {"type": "string", "enum": ["content", "files_with_matches", "count"]}
+        },
+        "required": ["pattern"]
+      }
+    },
+    {
+      "id": "web_search",
+      "name": "WebSearch",
+      "description": "Search the web for information",
+      "category": "web",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "Search query"}
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "id": "web_fetch",
+      "name": "WebFetch",
+      "description": "Fetch and analyze web page content",
+      "category": "web",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to fetch"},
+          "prompt": {"type": "string", "description": "What to extract from the page"}
+        },
+        "required": ["url", "prompt"]
+      }
+    },
+    {
+      "id": "analyze_complexity",
+      "name": "AnalyzeComplexity",
+      "description": "Analyze code complexity metrics",
+      "category": "coding",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to analyze"},
+          "language": {"type": "string", "description": "Programming language"}
+        },
+        "required": ["code"]
+      }
+    },
+    {
+      "id": "find_dependencies",
+      "name": "FindDependencies",
+      "description": "Find imports and dependencies in code",
+      "category": "coding",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to analyze"},
+          "language": {"type": "string", "description": "Programming language"}
+        },
+        "required": ["code"]
+      }
+    },
+    {
+      "id": "generate_docstring",
+      "name": "GenerateDocstring",
+      "description": "Generate documentation for code",
+      "category": "coding",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to document"},
+          "style": {"type": "string", "enum": ["google", "numpy", "sphinx", "jsdoc"]}
+        },
+        "required": ["code"]
+      }
+    },
+    {
+      "id": "suggest_refactorings",
+      "name": "SuggestRefactorings",
+      "description": "Suggest code refactoring improvements",
+      "category": "coding",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to analyze"},
+          "focus": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["code"]
+      }
+    },
+    {
+      "id": "generate_test_stub",
+      "name": "GenerateTestStub",
+      "description": "Generate test stubs for code",
+      "category": "coding",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to test"},
+          "framework": {"type": "string", "description": "Test framework"}
+        },
+        "required": ["code"]
+      }
+    },
+    {
+      "id": "dependency_audit",
+      "name": "DependencyAudit",
+      "description": "Audit dependencies for vulnerabilities",
+      "category": "security",
+      "cacheable": true,
+      "requiresAuth": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "packageFile": {"type": "string", "description": "Path to package file"},
+          "severityThreshold": {"type": "string", "enum": ["critical", "high", "medium", "low"]}
+        },
+        "required": ["packageFile"]
+      }
+    },
+    {
+      "id": "code_security_scan",
+      "name": "CodeSecurityScan",
+      "description": "Scan code for security vulnerabilities",
+      "category": "security",
+      "cacheable": true,
+      "requiresAuth": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string", "description": "Code to scan"},
+          "language": {"type": "string", "description": "Programming language"}
+        },
+        "required": ["code", "language"]
+      }
+
+    },
+    {
+      "id": "intelligence_analyze",
+      "name": "IntelligenceAnalyze",
+      "description": "Analyze codebase for issues, patterns, and metrics",
+      "category": "intelligence",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Path to analyze (file or directory)"},
+          "includeMetrics": {"type": "boolean", "description": "Include code quality metrics"},
+          "severity": {"type": "string", "enum": ["all", "critical", "high", "medium", "low"], "description": "Minimum severity to report"}
+        }
+      }
+    },
+    {
+      "id": "intelligence_refactor",
+      "name": "IntelligenceRefactor",
+      "description": "Find and optionally apply refactoring opportunities",
+      "category": "intelligence",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Path to analyze"},
+          "autoApply": {"type": "boolean", "description": "Automatically apply safe refactorings"},
+          "riskLevel": {"type": "string", "enum": ["safe", "low", "medium", "all"], "description": "Maximum risk level to consider"}
+        }
+      }
+    },
+    {
+      "id": "intelligence_document",
+      "name": "IntelligenceDocument",
+      "description": "Generate documentation from code analysis",
+      "category": "intelligence",
+      "cacheable": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Path to document"},
+          "format": {"type": "string", "enum": ["markdown", "json", "html"], "description": "Output format"},
+          "includeArchitecture": {"type": "boolean", "description": "Include architecture analysis"}
+        }
+      }
+    },
+    {
+      "id": "intelligence_test",
+      "name": "IntelligenceTest",
+      "description": "Generate test suites from code analysis",
+      "category": "intelligence",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Path to generate tests for"},
+          "framework": {"type": "string", "enum": ["jest", "mocha", "vitest", "pytest"], "description": "Test framework"},
+          "includeEdgeCases": {"type": "boolean", "description": "Include edge case tests"}
+        }
+      }
+    },
+    {
+      "id": "intelligence_full",
+      "name": "IntelligenceFull",
+      "description": "Run full intelligence suite: analyze, refactor, document, and test",
+      "category": "intelligence",
+      "cacheable": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Path to analyze"},
+          "autoFix": {"type": "boolean", "description": "Automatically apply safe fixes"},
+          "outputDir": {"type": "string", "description": "Directory for output files"}
+        }
+      }
+    }
+  ],
+
+  "capabilities": [
+    {"id": "chat", "label": "Chat", "description": "Basic conversational capabilities"},
+    {"id": "reasoning", "label": "Reasoning", "description": "Extended chain-of-thought reasoning"},
+    {"id": "tools", "label": "Tool Use", "description": "Ability to call external tools"},
+    {"id": "streaming", "label": "Streaming", "description": "Support for streaming responses"},
+    {"id": "multimodal", "label": "Multimodal", "description": "Support for images and mixed content"},
+    {"id": "vision", "label": "Vision", "description": "Image understanding capabilities"},
+    {"id": "prompt_caching", "label": "Prompt Caching", "description": "Cache repeated prompt content"}
+  ],
+
+  "defaults": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-pro",
+    "temperature": 0.0,
+    "maxTokens": 4096,
+    "taskType": "coding"
+  },
+
+  "metadata": {
+    "schemaVersion": "2.0.0",
+    "lastUpdated": "2024-11-25",
+    "author": "Trenchwork",
+    "framework": "agi-cli",
+    "description": "Unified schema for all AI tasks across all providers"
+  }
+}
