@@ -1,6 +1,10 @@
 /**
  * Full text-to-action pipeline for LLM-based autonomous robotics.
  *
+ * ⚠️ CONCEPT: Protocol definition and parser. No hardware actuation code.
+ * A real implementation needs ROS action clients, motor controller
+ * interfaces (ros2_control, libfranka, RTDE), and real-time comms.
+ *
  * The LLM outputs text. That text must be parsed into structured actuator
  * commands that physical robots can execute. This module provides the
  * complete translation layer: a structured protocol format parsable from

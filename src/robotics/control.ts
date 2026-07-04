@@ -1,6 +1,10 @@
 /**
  * Control and motion planning for LLM-based autonomous robotics.
  *
+ * ⚠️ CONCEPT: Type definitions for control schemes. No IK solver
+ * (KDL/Trac-IK), no trajectory execution, no MoveIt/OMPL integration.
+ * Real implementation needs C++ control libraries with hard real-time.
+ *
  * Translates high-level motion intent from the LLM into concrete control
  * commands through trajectory generation, inverse kinematics, motion
  * planning, and various control schemes (PID, MPC, impedance, admittance,

@@ -1,6 +1,10 @@
 /**
  * ROS 1/2 integration layer for LLM-based autonomous robotics.
  *
+ * ⚠️ CONCEPT: Type definitions for ROS graph state. No rclnodejs/rosnodejs
+ * dependency. No actual ROS node. A real implementation needs a Python/C++
+ * ROS 2 node that serializes topic data to JSON for the MCP bridge.
+ *
  * Provides abstractions over ROS topics, services, actions, parameters,
  * TF2 transforms, URDF models, and ROS bags. Includes text translation
  * functions that convert ROS graph state into LLM-readable text context,

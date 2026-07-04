@@ -1,6 +1,10 @@
 /**
  * Full sensor-to-text pipeline for LLM-based autonomous robotics.
  *
+ * ⚠️ CONCEPT: Type definitions and text composition. No sensor driver code.
+ * A real implementation needs ROS topic subscribers, driver SDKs (LIDAR,
+ * Realsense, etc.), and serialization to these types. See REALITY.md.
+ *
  * LLMs consume text tokens exclusively. Every sensor — LIDAR, camera, IMU,
  * joint encoder, force/torque, microphone — must translate its data into
  * structured text descriptions before the LLM can reason about the physical

@@ -1,6 +1,10 @@
 /**
  * Safety layer for LLM-based autonomous robotics.
  *
+ * ⚠️ CONCEPT: Type definitions. No hardware relay, no motor disable.
+ * Real safety requires hardware-level enforcement (safety-rated PLC,
+ * estop relay, ros2_control limits) — this layer is advisory.
+ *
  * Every actuator command must pass through safety validation before
  * execution. This module provides comprehensive safety abstractions:
  * bounds monitoring, emergency stop, operational envelopes, collision

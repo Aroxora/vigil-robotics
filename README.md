@@ -1,6 +1,10 @@
 # Vigil Robotics — LLM-Based Autonomous Robotics Control
 
-Production-grade robotics integration framework for grounding large language models in physical robot control. Multi-platform support for Boston Dynamics (Spot, Atlas), Universal Robots (UR5e, UR10e), KUKA LBR iiwa, ABB GoFa, Franka Emika Panda, Kinova Gen3, and all ROS-compatible platforms.
+> **⚠️ STATUS: Architecture reference / type definition library. Not yet tested on real hardware.**
+>
+> This repo defines the type system, protocol, and architecture for grounding LLMs in physical robot control. It compiles. It does not control a robot (yet). See [REALITY.md](REALITY.md) for a brutally honest gap analysis and what's needed to make this work on hardware.
+
+Sensor-to-text pipeline for grounding large language models in physical robot control. Multi-platform architecture for Boston Dynamics (Spot, Atlas), Universal Robots (UR5e, UR10e), KUKA LBR iiwa, ABB GoFa, Franka Emika Panda, Kinova Gen3, and all ROS-compatible platforms.
 
 ## Architecture
 
